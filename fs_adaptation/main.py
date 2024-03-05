@@ -14,7 +14,7 @@ np.random.seed(0)
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
 torch.cuda.manual_seed_all(0)
-torch.backends.cudnn.benchmark=True
+torch.backends.cudnn.benchmark = False
 torch.backends.cudnn.deterministic = True
 
 parser = argparse.ArgumentParser()
@@ -27,6 +27,9 @@ parser.add_argument('--num_classes', type=int, default=10)
 parser.add_argument('--loadsaved', type=int, default=0)
 parser.add_argument('--log_dir', type=str, default='debug')
 parser.add_argument('--train', type=str2bool, default=True)
+parser.add_argument('--finetune_num', type=int, default=15)
+parser.add_argument('--finetune_iter', type=int, default=100)
+parser.add_argument('--finetune_lr', type=float, default=0.01)
 
 # for SMN
 parser.add_argument('--routing_iter', type=int, default=3)
@@ -61,7 +64,7 @@ def log(obj, filename='log.txt'):
     with open(os.path.join(log_dir, filename), 'a') as f:
         print(obj, file=f)
 
-def train_model(model, epochs, data):
+def train_model(model, epochs, data, run):
     best_acc = 0.0
     start_epoch, ctr = 0, 0
     if args['loadsaved'] == 1:
@@ -116,7 +119,7 @@ def train_model(model, epochs, data):
                     'ctr': ctr,
                     'best_acc': best_acc
                 }
-                with open(log_dir + '/best_model.pt', 'wb') as f:
+                with open(log_dir + '/best_model_{}.pt'.format(run), 'wb') as f:
                     torch.save(state, f)
     return best_acc
 
@@ -127,11 +130,12 @@ def main():
     total = sum(p.numel() for p in model.parameters())
     print("total parameters: %.4fK" % (total / 1e3))
 
-    finetune_iter = 100
-    ft_num = 15
+    ft_iter = args['finetune_iter']
+    ft_lr = args['finetune_lr']
+    ft_num = args['finetune_num']
+    add_num = args['add']
     runs = 10
-    add_nums = [0, 1, 2]
-    ft_accs_all = [[] for _ in range(len(add_nums))]
+    test_acc_all_iid, test_acc_all = [], []
 
     data = MnistData_arithmetic(args['batch_size'], task_idx='A2B', train_num=60000, finetune_num=ft_num)
     for run in range(runs):
@@ -139,23 +143,25 @@ def main():
         model = mode(args).cuda()
 
         if args['train']:
-            train_model(model, args['epochs'], data)
+            train_model(model, args['epochs'], data, run)
 
-        saved = torch.load(log_dir + '/best_model.pt')
+        saved = torch.load(log_dir + '/best_model_{}.pt'.format(run))
         model.load_state_dict(saved['net'])
 
-        for idx, add_num in enumerate(add_nums):
-            add_module = False if add_num == 0 else True
-            ft_acc = fs_finetune(args, model, data, finetune_iter, num_classes=2, log=True,
-                                  add_module=add_module, add_num=add_nums[idx])
-            ft_accs_all[idx].append(ft_acc)
-            print("** add {} modules **, test acc:{}".format(add_num, ft_acc))
+        acc_iid = test_model_iid(model, data)
+        test_acc_all_iid.append(acc_iid)
 
-    print("********** After {} Runs **********".format(runs))
-    for idx, ft_accs in enumerate(ft_accs_all):
-        ft_accs = np.array(ft_accs)
-        print("** add {} modules **, test mean acc:{} (std:{})".format(
-            add_nums[idx], ft_accs.mean(), ft_accs.std()))
+        add_module = True if add_num > 0 else False
+        accuracy = fs_finetune(args, model, data, ft_iter, ft_lr, num_classes=2, log=True,
+                             add_module=add_module, add_num=add_num)
+        test_acc_all.append(accuracy)
+
+        print("*** Test accuracy: {} ***".format(accuracy))
+    test_acc_all = np.array(test_acc_all)
+    print("Few-shot test acc: {} (std: {})".format(test_acc_all.mean(), test_acc_all.std()))
+
+    test_acc_all_iid = np.array(test_acc_all_iid)
+    print("IID test acc: {} (std: {})".format(test_acc_all_iid.mean(), test_acc_all_iid.std()))
 
 if __name__ == '__main__':
     main()

@@ -180,10 +180,7 @@ class SMN(Template):
             probs = nn.Softmax(dim=-1)(preds)
             entropy = torch.mean(torch.sum(probs * torch.log(probs + 1e-8), dim=1))
             loss = self.Loss(preds, y) - entropy
-            if add_module:
-                return probs, loss
-            else:
-                return probs, loss + importance_loss
+            return probs, loss + importance_loss
         return preds
 
     def forward(self, x, y=None):

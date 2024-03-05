@@ -19,7 +19,7 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
-def fs_finetune(args, model, loader, iter=100, num_classes=10, log=True, add_module=False, add_num=0):
+def fs_finetune(args, model, loader, ft_iter=100, ft_lr=0.01, num_classes=10, log=True, add_module=False, add_num=0):
     classifier = model.finetune_classifier(num_classes=num_classes)
     #classifier = nn.Linear(model.out_attr_dim, num_classes).cuda()
     if args['model'] == 'SMN':
@@ -29,9 +29,9 @@ def fs_finetune(args, model, loader, iter=100, num_classes=10, log=True, add_mod
         params = model.get_finetune_params(classifier, add_modules=add_module)
     else:
         params = classifier.parameters()
-    optimizer_f = torch.optim.Adam(params, lr=0.01)
+    optimizer_f = torch.optim.Adam(params, lr=ft_lr)
 
-    finetune_iter = iter
+    finetune_iter = ft_iter
     model.train()
 
     def test():
