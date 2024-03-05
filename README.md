@@ -66,7 +66,7 @@ Please download the pretrained model at file path ``checkpoint/fs_adaptation/``,
 
 For example, to evaluate the performance of SMN with ``2 new modules``, 
 ```
-CUDA_VISIBLE_DEVICES=0 python fs_adaptation/main.py --model SMN --routing_iter 4 --finetune_num 15 --finetune_iter 100 --finetune_lr 0.001 --add_num 0 --train False --log_dir pretrained
+CUDA_VISIBLE_DEVICES=0 python fs_adaptation/main.py --model SMN --routing_iter 4 --finetune_num 15 --finetune_iter 100 --finetune_lr 0.001 --add_num 0 --train False --log_dir smn_t4
 
 CUDA_VISIBLE_DEVICES=0 python fs_adaptation/main.py --model SMN --routing_iter 4 --finetune_num 15 --finetune_iter 100 --finetune_lr 0.001 --add_num 2 --train False --log_dir smn_t4
 ```
