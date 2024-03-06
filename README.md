@@ -71,8 +71,14 @@ CUDA_VISIBLE_DEVICES=0 python fs_adaptation/main.py --model SMN --routing_iter 4
 CUDA_VISIBLE_DEVICES=0 python fs_adaptation/main.py --model SMN --routing_iter 4 --finetune_num 15 --finetune_iter 100 --finetune_lr 0.001 --add_num 2 --train False --log_dir smn_t4
 ```
 
+## Some Things You Need to Know
+ - As the Min-Max Digital Game is only a toy example for evaluation, we didn't focus much on hyperparameter tuning.
+ However, we found that setting appropriate hyperparameters can improve the performance of our SMN (and other comparative methods) further.
+ For example, reducing the finetuned learning rate or iterations helps the adaptation process of SMN.
+ - From the aspect of supporting intergration of new modules, the agreement routing is still far from satisfactory. Hence if you are interested in imporving our work, you may start with this part.
+
 ## Citation
-If you find our paper or code useful, please consider citing our work using the bibtex:
+If our paper or project inspires your work, please consider citing our work using the bibtex:
 
 ```citation
 @inproceedings{hu2024smn,
